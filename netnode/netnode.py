@@ -29,7 +29,7 @@ class Netnode(object):
       numbers, and allows values to be larger than 1024 bytes in length.
     
     This class supports keys that are numbers or strings. 
-    Values must be strings.
+    Values must be JSON-encodable.
    
     Implementation:
       The major limitation of the underlying netnode API is the fixed
@@ -84,6 +84,14 @@ class Netnode(object):
     def _compress(data):
         return zlib.compress(data)
 
+    @staticmethod
+    def _encode(data):
+        return json.dumps(data)
+
+    @staticmethod
+    def _decode(data):
+        return json.loads(data)
+
     def __getitem__(self, key):
         fget = None
         if isinstance(key, basestring):
@@ -104,7 +112,7 @@ class Netnode(object):
             chunks = [v]
             index_refs = fget(key, CHUNK_INDEX_TAG)
             if index_refs is not None:
-                first, last = json.loads(self._decompress(index_refs))
+                first, last = self._decode(self._decompress(index_refs))
                 g_logger.debug("get: chunk run: 0x%x to 0x%x (0x%x chunks)",
                                first, last, last-first+1)
                 for index_ref in range(first, last + 1):
@@ -112,14 +120,11 @@ class Netnode(object):
                     chunks.append(chunk)
             g_logger.debug("get: fetched 0x%x chunks", len(chunks))
             g_logger.debug("get: data length: 0x%x", len("".join(chunks)))
-            return self._decompress("".join(chunks))
+            return self._decode(self._decompress("".join(chunks)))
         else:
-            return self._decompress(v)
+            return self._decode(self._decompress(v))
 
     def __setitem__(self, key, value):
-        if not isinstance(value, basestring):
-            raise TypeError("cannot use {} as value".format(type(value)))
-
         fset = None
         fget = None
         flast = None
@@ -134,7 +139,7 @@ class Netnode(object):
         else:
             raise TypeError("cannot use {} as key".format(type(key)))
 
-        d = self._compress(value)
+        d = self._compress(self._encode(value))
         g_logger.debug("set: data length: 0x%x", len(d))
  
         # always store first chunk in the hashval table
@@ -147,7 +152,7 @@ class Netnode(object):
             # delete existing chunks
             index_refs = fget(key, CHUNK_INDEX_TAG)
             if index_refs is not None:
-                first, last = json.loads(self._decompress(index_refs))
+                first, last = self._decode(self._decompress(index_refs))
                 for index_ref in range(first, last + 1):
                     self._n.supdel(index_ref, CHUNK_TAG)
 
@@ -170,7 +175,7 @@ class Netnode(object):
             last = chunk_refs[-1]
             g_logger.debug("set: chunk run: 0x%x to 0x%x (0x%x chunks)",
                            first, last, last-first+1)
-            refs = self._compress(json.dumps((first, last)))
+            refs = self._compress(self._encode((first, last)))
             
             if len(refs) > CHUNK_SIZE:
                 raise BufferError()
@@ -197,7 +202,7 @@ class Netnode(object):
         # delete existing chunks
         index_refs = fget(key, CHUNK_INDEX_TAG)
         if index_refs is not None:
-            first, last = json.loads(self._decompress(index_refs))
+            first, last = self._decode(self._decompress(index_refs))
             for index_ref in range(first, last + 1):
                 self._n.supdel(index_ref, CHUNK_TAG)
             fdel(key, CHUNK_INDEX_TAG)
