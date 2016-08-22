@@ -72,7 +72,6 @@ def test_large_data():
     with killing_netnode(TEST_NAMESPACE) as n:
         random_data = get_random_data(4096)
         n[3] = random_data
-        n[3] = random_data
         assert(n[3] == random_data)
 
 
