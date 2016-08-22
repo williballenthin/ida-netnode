@@ -105,23 +105,30 @@ def test_hash_ordering():
 
 def test_iterkeys():
     LARGE_VALUE = get_random_data(16 * 1024)
+    LARGE_VALUE2 = get_random_data(16 * 1024)
     import zlib
     assert(zlib.compress(LARGE_VALUE) > 1024)
+    assert(zlib.compress(LARGE_VALUE2) > 1024)
+
+    assert LARGE_VALUE != LARGE_VALUE2
 
     with killing_netnode(TEST_NAMESPACE) as n:
         n[1] = LARGE_VALUE
         assert set(n.keys()) == set([1])
 
-        n[2] = LARGE_VALUE
+        n[2] = LARGE_VALUE2
         assert set(n.keys()) == set([1, 2])
 
+        assert n[1] != n[2]
 
     with killing_netnode(TEST_NAMESPACE) as n:
         n['one'] = LARGE_VALUE
         assert set(n.keys()) == set(['one'])
 
-        n['two'] = LARGE_VALUE
+        n['two'] = LARGE_VALUE2
         assert set(n.keys()) == set(['one', 'two'])
+
+        assert n['one'] != n['two']
         
     with killing_netnode(TEST_NAMESPACE) as n:
         n[1] = LARGE_VALUE
@@ -139,7 +146,7 @@ def test_iterkeys():
         n[3] = "A"
         assert set(n.keys()) == set([1, 2, 'one', 'two', 3])
  
-        n['tree'] = "A"
+        n['three'] = "A"
         assert set(n.keys()) == set([1, 2, 'one', 'two', 3, 'three'])
  
 

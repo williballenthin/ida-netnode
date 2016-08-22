@@ -96,6 +96,18 @@ class Netnode(object):
         if not did_del:
             raise KeyError("'{}' not found".format(key))
 
+    def _get_next_slot(self, tag):
+        '''
+        get the first unused supval table key, or 0 if the
+         table is empty.
+        useful for filling the supval table sequentially.
+        '''
+        slot = self._n.suplast(tag)
+        if slot is None or slot == idaapi.BADNODE:
+            return 0
+        else:
+            return slot + 1
+
     def _intset(self, key, value):
         assert isinstance(key, (int, long))
         assert value is not None
@@ -106,9 +118,7 @@ class Netnode(object):
             pass
 
         if len(value) > BLOB_SIZE:
-            # suplast fetches the next open slot in the INT_KEYS_TAG store.
-            #  this is because a blobstore is a specialized supval table.
-            storekey = self._n.suplast(INT_KEYS_TAG)
+            storekey = self._get_next_slot(INT_KEYS_TAG)
             self._n.setblob(value, storekey, INT_KEYS_TAG)
             self._n.supset(key, str(storekey), INT_TO_INT_MAP_TAG)
         else:
@@ -158,9 +168,7 @@ class Netnode(object):
             pass
 
         if len(value) > BLOB_SIZE:
-            # suplast fetches the next open slot in the STR_KEYS_TAG store.
-            #  this is because a blobstore is a specialized supval table.
-            storekey = self._n.suplast(STR_KEYS_TAG)
+            storekey = self._get_next_slot(STR_KEYS_TAG)
             self._n.setblob(value, storekey, STR_KEYS_TAG)
             self._n.hashset(key, str(storekey), STR_TO_INT_MAP_TAG)
         else:
