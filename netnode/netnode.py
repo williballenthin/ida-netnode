@@ -9,6 +9,7 @@ OUR_NETNODE = "$ com.williballenthin"
 INT_KEYS_TAG = 'M'
 STR_KEYS_TAG = 'N'
 STR_TO_INT_MAP_TAG = 'O'
+INT_TO_INT_MAP_TAG = 'P'
 logger = logging.getLogger(__name__)
 
 
@@ -49,7 +50,9 @@ class Netnode(object):
         we store the values in different places:
     
         - integer keys with small values: stored in default supval table
-        - integer keys with large values: stored in blob table named 'M'
+        - integer keys with large values: the data is stored in the blob
+           table named 'M' using an internal key. The link from the given key
+           to the internal key is stored in the supval table named 'P'.
         - string keys with small values: stored in default hashval table
         - string keys with large values: the data is stored in the blob
            table named 'N' using an integer key. The link from string key
@@ -80,8 +83,11 @@ class Netnode(object):
         assert isinstance(key, (int, long))
 
         did_del = False
-        if self._n.getblob(key, INT_KEYS_TAG) is not None:
-            self._n.delblob(key, INT_KEYS_TAG)
+        storekey = self._n.supval(key, INT_TO_INT_MAP_TAG)
+        if storekey is not None:
+            storekey = int(storekey)
+            self._n.delblob(storekey, INT_KEYS_TAG)
+            self._n.supdel(key)
             did_del = True
         if self._n.supval(key) is not None:
             self._n.supdel(key)
@@ -100,15 +106,23 @@ class Netnode(object):
             pass
 
         if len(value) > BLOB_SIZE:
-            self._n.setblob(value, key, INT_KEYS_TAG)
+            # suplast fetches the next open slot in the INT_KEYS_TAG store.
+            #  this is because a blobstore is a specialized supval table.
+            storekey = self._n.suplast(INT_KEYS_TAG)
+            self._n.setblob(value, storekey, INT_KEYS_TAG)
+            self._n.supset(key, str(storekey), INT_TO_INT_MAP_TAG)
         else:
             self._n.supset(key, value)
 
     def _intget(self, key):
         assert isinstance(key, (int, long))
 
-        v = self._n.getblob(key, INT_KEYS_TAG)
-        if v is not None:
+        storekey = self._n.supval(key, INT_TO_INT_MAP_TAG)
+        if storekey is not None:
+            storekey = int(storekey)
+            v = self._n.getblob(storekey, INT_KEYS_TAG)
+            if v is None:
+                raise NetnodeCorruptError()
             return v
 
         v = self._n.supval(key)
@@ -121,9 +135,10 @@ class Netnode(object):
         assert isinstance(key, (basestring))
 
         did_del = False
-        intkey = self._n.hashval(key, STR_TO_INT_MAP_TAG)
-        if intkey is not None:
-            self._n.delblob(intkey, STR_KEYS_TAG)
+        storekey = self._n.hashval(key, STR_TO_INT_MAP_TAG)
+        if storekey is not None:
+            storekey = int(storekey)
+            self._n.delblob(storekey, STR_KEYS_TAG)
             self._n.hashdel(key)
             did_del = True
         if self._n.hashval(key):
@@ -132,9 +147,6 @@ class Netnode(object):
 
         if not did_del:
             raise KeyError("'{}' not found".format(key))
-
-    def _get_next_str_slot(self):
-        return self._n.suplast(STR_KEYS_TAG)
 
     def _strset(self, key, value):
         assert isinstance(key, (basestring))
@@ -148,18 +160,19 @@ class Netnode(object):
         if len(value) > BLOB_SIZE:
             # suplast fetches the next open slot in the STR_KEYS_TAG store.
             #  this is because a blobstore is a specialized supval table.
-            intkey = self._n.suplast(STR_KEYS_TAG)
-            self._n.setblob(value, intkey, STR_KEYS_TAG)
-            self._n.hashset(key, intkey, STR_TO_INT_MAP_TAG)
+            storekey = self._n.suplast(STR_KEYS_TAG)
+            self._n.setblob(value, storekey, STR_KEYS_TAG)
+            self._n.hashset(key, str(storekey), STR_TO_INT_MAP_TAG)
         else:
             self._n.hashset(key, value)
 
     def _strget(self, key):
         assert isinstance(key, (basestring))
 
-        intkey = self._n.hashval(key, STR_TO_INT_MAP_TAG)
-        if intkey is not None:
-            v = self._n.getblob(intkey, STR_KEYS_TAG)
+        storekey = self._n.hashval(key, STR_TO_INT_MAP_TAG)
+        if storekey is not None:
+            storekey = int(storekey)
+            v = self._n.getblob(storekey, STR_KEYS_TAG)
             if v is None:
                 raise NetnodeCorruptError()
             return v
@@ -219,8 +232,6 @@ class Netnode(object):
             return False
 
     def iterkeys(self):
-        ret = []
-
         # integer keys for all small values
         i = self._n.sup1st()
         while i != idaapi.BADNODE:
@@ -228,10 +239,10 @@ class Netnode(object):
             i = self._n.supnxt(i)
 
         # integer keys for all big values
-        i = self._n.sup1st(INT_KEYS_TAG)
+        i = self._n.sup1st(INT_TO_INT_MAP_TAG)
         while i != idaapi.BADNODE:
             yield i
-            i = self._n.supnxt(i, INT_KEYS_TAG)
+            i = self._n.supnxt(i, INT_TO_INT_MAP_TAG)
 
         # string keys for all small values
         i = self._n.hash1st()
@@ -240,10 +251,10 @@ class Netnode(object):
             i = self._n.hashnxt(i)
 
         # string keys for all big values
-        i = self._n.hash1st(STR_KEYS_TAG)
+        i = self._n.hash1st(STR_TO_INT_MAP_TAG)
         while i != idaapi.BADNODE and i is not None:
             yield i
-            i = self._n.hashnxt(i, STR_KEYS_TAG)
+            i = self._n.hashnxt(i, STR_TO_INT_MAP_TAG)
 
     def keys(self):
         return [k for k in self.iterkeys()]

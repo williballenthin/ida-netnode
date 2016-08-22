@@ -70,7 +70,7 @@ def test_large_data():
     demonstrate that netnodes support large data values.
     '''
     with killing_netnode(TEST_NAMESPACE) as n:
-        random_data = get_random_data(4096)
+        random_data = get_random_data(1024 * 8)
         n[3] = random_data
         assert(n[3] == random_data)
 
@@ -102,6 +102,46 @@ def test_hash_ordering():
         m.hashset('b', 'b')
         assert get_hash_order(hashiter(m)) == ['a', 'b', 'c']
 
+
+def test_iterkeys():
+    LARGE_VALUE = get_random_data(16 * 1024)
+    import zlib
+    assert(zlib.compress(LARGE_VALUE) > 1024)
+
+    with killing_netnode(TEST_NAMESPACE) as n:
+        n[1] = LARGE_VALUE
+        assert set(n.keys()) == set([1])
+
+        n[2] = LARGE_VALUE
+        assert set(n.keys()) == set([1, 2])
+
+
+    with killing_netnode(TEST_NAMESPACE) as n:
+        n['one'] = LARGE_VALUE
+        assert set(n.keys()) == set(['one'])
+
+        n['two'] = LARGE_VALUE
+        assert set(n.keys()) == set(['one', 'two'])
+        
+    with killing_netnode(TEST_NAMESPACE) as n:
+        n[1] = LARGE_VALUE
+        assert set(n.keys()) == set([1])
+
+        n[2] = LARGE_VALUE
+        assert set(n.keys()) == set([1, 2])
+
+        n['one'] = LARGE_VALUE
+        assert set(n.keys()) == set([1, 2, 'one'])
+
+        n['two'] = LARGE_VALUE
+        assert set(n.keys()) == set([1, 2, 'one', 'two'])
+
+        n[3] = "A"
+        assert set(n.keys()) == set([1, 2, 'one', 'two', 3])
+ 
+        n['tree'] = "A"
+        assert set(n.keys()) == set([1, 2, 'one', 'two', 3, 'three'])
+ 
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
