@@ -12,6 +12,11 @@ STR_TO_INT_MAP_TAG = 'O'
 INT_TO_INT_MAP_TAG = 'P'
 logger = logging.getLogger(__name__)
 
+# get the IDA version number
+ida_major, ida_minor = map(int, idaapi.get_kernel_version().split("."))
+using_ida7api = (ida_major > 6)
+
+
 
 class NetnodeCorruptError(RuntimeError):
     pass
@@ -241,28 +246,53 @@ class Netnode(object):
 
     def iterkeys(self):
         # integer keys for all small values
-        i = self._n.sup1st()
+        i = None
+        if using_ida7api:
+            i = self._n.supfirst()
+        else:
+            i = self._n.sup1st()
         while i != idaapi.BADNODE:
             yield i
-            i = self._n.supnxt(i)
+            if using_ida7api:
+                i = self._n.supnext(i)
+            else:
+                i = self._n.supnxt(i)
 
         # integer keys for all big values
-        i = self._n.sup1st(INT_TO_INT_MAP_TAG)
+        if using_ida7api:
+            i = self._n.supfirst(INT_TO_INT_MAP_TAG)
+        else:
+            i = self._n.sup1st(INT_TO_INT_MAP_TAG)
         while i != idaapi.BADNODE:
             yield i
-            i = self._n.supnxt(i, INT_TO_INT_MAP_TAG)
+            if using_ida7api:
+                i = self._n.supnext(i, INT_TO_INT_MAP_TAG)
+            else:
+                i = self._n.supnxt(i, INT_TO_INT_MAP_TAG)
 
         # string keys for all small values
-        i = self._n.hash1st()
+        if using_ida7api:
+            i = self._n.hashfirst()
+        else:
+            i = self._n.hash1st()
         while i != idaapi.BADNODE and i is not None:
             yield i
-            i = self._n.hashnxt(i)
+            if using_ida7api:
+                i = self._n.hashnext(i)
+            else:
+                i = self._n.hashnxt(i)
 
         # string keys for all big values
-        i = self._n.hash1st(STR_TO_INT_MAP_TAG)
+        if using_ida7api:
+            i = self._n.hashfirst(STR_TO_INT_MAP_TAG)
+        else:
+            i = self._n.hash1st(STR_TO_INT_MAP_TAG)
         while i != idaapi.BADNODE and i is not None:
             yield i
-            i = self._n.hashnxt(i, STR_TO_INT_MAP_TAG)
+            if using_ida7api:
+                i = self._n.hashnext(i, STR_TO_INT_MAP_TAG)
+            else:
+                i = self._n.hashnxt(i, STR_TO_INT_MAP_TAG)
 
     def keys(self):
         return [k for k in self.iterkeys()]
