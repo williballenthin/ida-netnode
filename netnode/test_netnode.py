@@ -9,6 +9,11 @@ import pytest
 
 import netnode
 
+# get the IDA version number
+ida_major, ida_minor = map(int, idaapi.get_kernel_version().split("."))
+using_ida7api = (ida_major > 6)
+
+
 
 TEST_NAMESPACE = '$ some.namespace'
 
@@ -85,10 +90,17 @@ def test_hash_ordering():
         m = n._n
 
         def hashiter(m):
-            i = m.hash1st()
+            i = None
+            if using_ida7api:
+                i = m.hashfirst()
+            else:
+                i = m.hash1st()
             while i != idaapi.BADNODE and i is not None:
                 yield i
-                i = m.hashnxt(i)
+                if using_ida7api:
+                    i = m.hashnext(i)
+                else:
+                    i = m.hashnxt(i)
 
         def get_hash_order(hiter):
             return [k for k in hiter]
