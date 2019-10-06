@@ -7,10 +7,10 @@ import contextlib
 import idaapi
 import pytest
 
-import netnode
+from . import netnode
 
 # get the IDA version number
-ida_major, ida_minor = map(int, idaapi.get_kernel_version().split("."))
+ida_major, ida_minor = list(map(int, idaapi.get_kernel_version().split(".")))
 using_ida7api = (ida_major > 6)
 
 
@@ -54,13 +54,13 @@ def test_basic_features():
         # then when we add a second thing, its also there
         n['2'] = 'world'
         assert(True == ('2' in n))
-        assert(len(n.keys()) == 2)
-        assert(n.keys()[0] == 1)
-        assert(n.keys()[1] == '2')
-        assert(len(n.values()) == 2)
-        assert(n.values()[0] == 'hello')
-        assert(n.values()[1] == 'world')
-        assert(len(n.items()) == 2)
+        assert(len(list(n.keys())) == 2)
+        assert(list(n.keys())[0] == 1)
+        assert(list(n.keys())[1] == '2')
+        assert(len(list(n.values())) == 2)
+        assert(list(n.values())[0] == 'hello')
+        assert(list(n.values())[1] == 'world')
+        assert(len(list(n.items())) == 2)
 
         # and when we delete the first item, only it is deleted
         del n[1]
