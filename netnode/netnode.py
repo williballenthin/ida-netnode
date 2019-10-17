@@ -13,9 +13,8 @@ INT_TO_INT_MAP_TAG = 'P'
 logger = logging.getLogger(__name__)
 
 # get the IDA version number
-ida_major, ida_minor = map(int, idaapi.get_kernel_version().split("."))
+ida_major, ida_minor = list(map(int, idaapi.get_kernel_version().split(".")))
 using_ida7api = (ida_major > 6)
-
 
 
 class NetnodeCorruptError(RuntimeError):
@@ -63,9 +62,10 @@ class Netnode(object):
            table named 'N' using an integer key. The link from string key
            to int key is stored in the supval table named 'O'.
     """
+
     def __init__(self, netnode_name=OUR_NETNODE):
         self._netnode_name = netnode_name
-        #self._n = idaapi.netnode(netnode_name, namelen=0, do_create=True)
+        # self._n = idaapi.netnode(netnode_name, namelen=0, do_create=True)
         self._n = idaapi.netnode(netnode_name, 0, True)
 
     @staticmethod
@@ -85,7 +85,7 @@ class Netnode(object):
         return json.loads(data)
 
     def _intdel(self, key):
-        assert isinstance(key, (int, long))
+        assert isinstance(key, int)
 
         did_del = False
         storekey = self._n.supval(key, INT_TO_INT_MAP_TAG)
@@ -114,7 +114,7 @@ class Netnode(object):
             return slot + 1
 
     def _intset(self, key, value):
-        assert isinstance(key, (int, long))
+        assert isinstance(key, int)
         assert value is not None
 
         try:
@@ -130,7 +130,7 @@ class Netnode(object):
             self._n.supset(key, value)
 
     def _intget(self, key):
-        assert isinstance(key, (int, long))
+        assert isinstance(key, int)
 
         storekey = self._n.supval(key, INT_TO_INT_MAP_TAG)
         if storekey is not None:
@@ -147,7 +147,7 @@ class Netnode(object):
         raise KeyError("'{}' not found".format(key))
 
     def _strdel(self, key):
-        assert isinstance(key, (basestring))
+        assert isinstance(key, (str))
 
         did_del = False
         storekey = self._n.hashval(key, STR_TO_INT_MAP_TAG)
@@ -164,7 +164,7 @@ class Netnode(object):
             raise KeyError("'{}' not found".format(key))
 
     def _strset(self, key, value):
-        assert isinstance(key, (basestring))
+        assert isinstance(key, (str))
         assert value is not None
 
         try:
@@ -180,7 +180,7 @@ class Netnode(object):
             self._n.hashset(key, value)
 
     def _strget(self, key):
-        assert isinstance(key, (basestring))
+        assert isinstance(key, (str))
 
         storekey = self._n.hashval(key, STR_TO_INT_MAP_TAG)
         if storekey is not None:
@@ -197,9 +197,9 @@ class Netnode(object):
         raise KeyError("'{}' not found".format(key))
 
     def __getitem__(self, key):
-        if isinstance(key, basestring):
+        if isinstance(key, str):
             v = self._strget(key)
-        elif isinstance(key, (int, long)):
+        elif isinstance(key, int):
             v = self._intget(key)
         else:
             raise TypeError("cannot use {} as key".format(type(key)))
@@ -215,17 +215,17 @@ class Netnode(object):
         assert value is not None
 
         v = self._compress(self._encode(value))
-        if isinstance(key, basestring):
+        if isinstance(key, str):
             self._strset(key, v)
-        elif isinstance(key, (int, long)):
+        elif isinstance(key, int):
             self._intset(key, v)
         else:
             raise TypeError("cannot use {} as key".format(type(key)))
 
     def __delitem__(self, key):
-        if isinstance(key, basestring):
+        if isinstance(key, str):
             self._strdel(key)
-        elif isinstance(key, (int, long)):
+        elif isinstance(key, int):
             self._intdel(key)
         else:
             raise TypeError("cannot use {} as key".format(type(key)))
@@ -295,23 +295,22 @@ class Netnode(object):
                 i = self._n.hashnxt(i, STR_TO_INT_MAP_TAG)
 
     def keys(self):
-        return [k for k in self.iterkeys()]
+        return [k for k in self.keys()]
 
     def itervalues(self):
-        for k in self.iterkeys():
+        for k in self.keys():
             yield self[k]
 
     def values(self):
-        return [v for v in self.itervalues()]
+        return [v for v in self.values()]
 
     def iteritems(self):
-        for k in self.iterkeys():
+        for k in self.keys():
             yield k, self[k]
 
     def items(self):
-        return [(k, v) for k, v in self.iteritems()]
+        return [(k, v) for k, v in self.items()]
 
     def kill(self):
         self._n.kill()
         self._n = idaapi.netnode(self._netnode_name, 0, True)
-

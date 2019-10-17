@@ -1,1 +1,1 @@
-from netnode import Netnode
+from .netnode import Netnode
