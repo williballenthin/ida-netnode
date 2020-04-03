@@ -306,7 +306,7 @@ class Netnode(object):
                 i = self._n.hashnxt(i, STR_TO_INT_MAP_TAG)
 
     def keys(self):
-        return [k for k in list(self.keys())]
+        return [k for k in list(self.iterkeys())]
 
     def itervalues(self):
         for k in list(self.keys()):
