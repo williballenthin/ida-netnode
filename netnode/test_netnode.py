@@ -14,7 +14,6 @@ ida_major, ida_minor = list(map(int, idaapi.get_kernel_version().split(".")))
 using_ida7api = (ida_major > 6)
 
 
-
 TEST_NAMESPACE = '$ some.namespace'
 
 
@@ -141,7 +140,7 @@ def test_iterkeys():
         assert set(n.keys()) == set(['one', 'two'])
 
         assert n['one'] != n['two']
-        
+
     with killing_netnode(TEST_NAMESPACE) as n:
         n[1] = LARGE_VALUE
         assert set(n.keys()) == set([1])
@@ -157,10 +156,10 @@ def test_iterkeys():
 
         n[3] = "A"
         assert set(n.keys()) == set([1, 2, 'one', 'two', 3])
- 
+
         n['three'] = "A"
         assert set(n.keys()) == set([1, 2, 'one', 'two', 3, 'three'])
- 
+
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
