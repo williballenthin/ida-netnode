@@ -254,7 +254,7 @@ class Netnode(object):
         except (KeyError, zlib.error):
             return False
 
-    def iterkeys(self):
+    def _iter_int_keys_small(self):
         # integer keys for all small values
         i = None
         if using_ida7api:
@@ -268,6 +268,7 @@ class Netnode(object):
             else:
                 i = self._n.supnxt(i)
 
+    def _iter_int_keys_large(self):
         # integer keys for all big values
         if using_ida7api:
             i = self._n.supfirst(INT_TO_INT_MAP_TAG)
@@ -280,6 +281,7 @@ class Netnode(object):
             else:
                 i = self._n.supnxt(i, INT_TO_INT_MAP_TAG)
 
+    def _iter_str_keys_small(self):
         # string keys for all small values
         if using_ida7api:
             i = self._n.hashfirst()
@@ -292,6 +294,7 @@ class Netnode(object):
             else:
                 i = self._n.hashnxt(i)
 
+    def _iter_str_keys_large(self):
         # string keys for all big values
         if using_ida7api:
             i = self._n.hashfirst(STR_TO_INT_MAP_TAG)
@@ -303,6 +306,19 @@ class Netnode(object):
                 i = self._n.hashnext(i, STR_TO_INT_MAP_TAG)
             else:
                 i = self._n.hashnxt(i, STR_TO_INT_MAP_TAG)
+
+    def iterkeys(self):
+        for key in self._iter_int_keys_small():
+            yield key
+
+        for key in self._iter_int_keys_large():
+            yield key
+
+        for key in self._iter_str_keys_small():
+            yield key
+
+        for key in self._iter_str_keys_large():
+            yield key
 
     def keys(self):
         return [k for k in list(self.iterkeys())]
