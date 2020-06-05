@@ -80,7 +80,7 @@ def test_large_data():
 
 
 def test_hash_ordering():
-    ''' 
+    '''
     the following demonstrates that 'hashes' are iterated alphabetically.
     this is an IDAPython implementation feature.
     '''
