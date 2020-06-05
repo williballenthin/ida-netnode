@@ -3,10 +3,9 @@ import zlib
 import json
 import logging
 import struct
+
+import six
 import idaapi
-# Python 2/3 compat
-if sys.version_info > (2, 8):
-    long = int
 
 BLOB_SIZE = 1024
 OUR_NETNODE = "$ com.williballenthin"
@@ -95,7 +94,7 @@ class Netnode(object):
         return json.loads(data)
 
     def _intdel(self, key):
-        assert isinstance(key, (int, long))
+        assert isinstance(key, six.integer_types)
 
         did_del = False
         storekey = self._n.supval(key, INT_TO_INT_MAP_TAG)
@@ -124,7 +123,7 @@ class Netnode(object):
             return slot + 1
 
     def _intset(self, key, value):
-        assert isinstance(key, (int, long))
+        assert isinstance(key, six.integer_types)
         assert value is not None
 
         try:
@@ -140,7 +139,7 @@ class Netnode(object):
             self._n.supset(key, value)
 
     def _intget(self, key):
-        assert isinstance(key, (int, long))
+        assert isinstance(key, six.integer_types)
 
         storekey = self._n.supval(key, INT_TO_INT_MAP_TAG)
         if storekey is not None:
@@ -209,7 +208,7 @@ class Netnode(object):
     def __getitem__(self, key):
         if isinstance(key, str):
             v = self._strget(key)
-        elif isinstance(key, (int, long)):
+        elif isinstance(key, six.integer_types):
             v = self._intget(key)
         else:
             raise TypeError("cannot use {} as key".format(type(key)))
@@ -228,7 +227,7 @@ class Netnode(object):
         v = self._compress(self._encode(value))
         if isinstance(key, str):
             self._strset(key, v)
-        elif isinstance(key, (int, long)):
+        elif isinstance(key, six.integer_types):
             self._intset(key, v)
         else:
             raise TypeError("cannot use {} as key".format(type(key)))
@@ -236,7 +235,7 @@ class Netnode(object):
     def __delitem__(self, key):
         if isinstance(key, str):
             self._strdel(key)
-        elif isinstance(key, (int, long)):
+        elif isinstance(key, six.integer_types):
             self._intdel(key)
         else:
             raise TypeError("cannot use {} as key".format(type(key)))
