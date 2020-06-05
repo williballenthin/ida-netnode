@@ -73,25 +73,47 @@ class Netnode(object):
 
     @staticmethod
     def _decompress(data):
-        if sys.version_info < (2, 8):
-            return zlib.decompress(data)
-        return zlib.decompress(data).decode('utf8')
+        '''
+        args:
+          data (bytes): the data to decompress
+
+        returns:
+          bytes: the decompressed data.
+        '''
+        return zlib.decompress(data)
 
     @staticmethod
     def _compress(data):
-        if sys.version_info < (2, 8):
-            data_ = data
-        else:
-            data_ = bytes(data, encoding='utf8')
-        return zlib.compress(data_)
+        '''
+        args:
+          data (bytes): the data to compress
+
+        returns:
+          bytes: the compressed data.
+        '''
+        return zlib.compress(data)
 
     @staticmethod
     def _encode(data):
-        return json.dumps(data)
+        '''
+        args:
+          data (object): the data to serialize to json.
+
+        returns:
+          bytes: the ascii-encoded serialized data buffer.
+        '''
+        return json.dumps(data).encode("ascii")
 
     @staticmethod
     def _decode(data):
-        return json.loads(data)
+        '''
+        args:
+          data (bytes): the ascii-encoded json serialized data buffer.
+
+        returns:
+          object: the deserialized object.
+        '''
+        return json.loads(data.decode("ascii"))
 
     def _intdel(self, key):
         assert isinstance(key, six.integer_types)
@@ -328,14 +350,14 @@ class Netnode(object):
             yield self[k]
 
     def values(self):
-        return [v for v in list(self.values())]
+        return [v for v in list(self.itervalues())]
 
     def iteritems(self):
         for k in list(self.keys()):
             yield k, self[k]
 
     def items(self):
-        return [(k, v) for k, v in list(self.items())]
+        return [(k, v) for k, v in list(self.iteritems())]
 
     def kill(self):
         self._n.kill()

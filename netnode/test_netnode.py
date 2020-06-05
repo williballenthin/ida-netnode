@@ -1,13 +1,11 @@
-import os
 import random
 import string
 import logging
 import contextlib
 
 import idaapi
-import pytest
 
-from . import netnode
+from netnode import netnode
 
 # get the IDA version number
 ida_major, ida_minor = list(map(int, idaapi.get_kernel_version().split(".")))
@@ -18,6 +16,10 @@ TEST_NAMESPACE = '$ some.namespace'
 
 
 def get_random_data(N):
+    '''
+    returns:
+      str: a string containing N ASCII characters.
+    '''
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(N))
 
 
@@ -104,13 +106,13 @@ def test_hash_ordering():
         def get_hash_order(hiter):
             return [k for k in hiter]
 
-        m.hashset('a', 'a')
+        m.hashset('a', b'a')
         assert get_hash_order(hashiter(m)) == ['a']
 
-        m.hashset('c', 'c')
+        m.hashset('c', b'c')
         assert get_hash_order(hashiter(m)) == ['a', 'c']
 
-        m.hashset('b', 'b')
+        m.hashset('b', b'b')
         assert get_hash_order(hashiter(m)) == ['a', 'b', 'c']
 
 
@@ -118,8 +120,8 @@ def test_iterkeys():
     LARGE_VALUE = get_random_data(16 * 1024)
     LARGE_VALUE2 = get_random_data(16 * 1024)
     import zlib
-    assert(zlib.compress(LARGE_VALUE) > 1024)
-    assert(zlib.compress(LARGE_VALUE2) > 1024)
+    assert(len(zlib.compress(LARGE_VALUE.encode("ascii"))) > 1024)
+    assert(len(zlib.compress(LARGE_VALUE2.encode("ascii"))) > 1024)
 
     assert LARGE_VALUE != LARGE_VALUE2
 
@@ -167,7 +169,13 @@ def main():
     # cleanup any existing data
     netnode.Netnode(TEST_NAMESPACE).kill()
 
-    pytest.main(['--capture=sys', os.path.dirname(__file__)])
+    # rely on assert crashing the interpreter to indicate failure.
+    # pytest no longer works on py3 idapython.
+    test_basic_features()
+    test_large_data()
+    test_hash_ordering()
+    test_iterkeys()
+    print("netnode: tests: pass")
 
 
 if __name__ == '__main__':
