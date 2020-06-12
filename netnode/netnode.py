@@ -123,7 +123,7 @@ class Netnode(object):
         if storekey is not None:
             storekey = int(storekey)
             self._n.delblob(storekey, INT_KEYS_TAG)
-            self._n.supdel(key)
+            self._n.supdel(key, INT_TO_INT_MAP_TAG)
             did_del = True
         if self._n.supval(key) is not None:
             self._n.supdel(key)
@@ -185,7 +185,7 @@ class Netnode(object):
         if storekey is not None and len(storekey) == 4:
             storekey, = struct.unpack('>I', storekey)
             self._n.delblob(storekey, STR_KEYS_TAG)
-            self._n.hashdel(key)
+            self._n.hashdel(key, STR_TO_INT_MAP_TAG)
             did_del = True
         if self._n.hashval(key):
             self._n.hashdel(key)
