@@ -79,6 +79,8 @@ def test_large_data():
         random_data = get_random_data(1024 * 8)
         n[3] = random_data
         assert(n[3] == random_data)
+        del n[3]
+        assert(dict(n) == {})
 
 
 def test_hash_ordering():
