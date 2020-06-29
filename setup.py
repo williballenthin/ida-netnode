@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='ida-netnode',
-      version="2.0",
+      version="3.0",
       description="Humane API for storing and accessing persistent data in IDA Pro databases",
       author='Willi Ballenthin',
       author_email='william.ballenthin@fireeye.com',
