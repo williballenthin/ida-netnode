@@ -2,7 +2,6 @@ import sys
 import zlib
 import json
 import logging
-import struct
 
 import six
 import idaapi
@@ -156,7 +155,7 @@ class Netnode(object):
         if len(value) > BLOB_SIZE:
             storekey = self._get_next_slot(INT_KEYS_TAG)
             self._n.setblob(value, storekey, INT_KEYS_TAG)
-            self._n.supset(key, str(storekey), INT_TO_INT_MAP_TAG)
+            self._n.supset(key, str(storekey).encode('utf-8'), INT_TO_INT_MAP_TAG)
         else:
             self._n.supset(key, value)
 
@@ -165,7 +164,7 @@ class Netnode(object):
 
         storekey = self._n.supval(key, INT_TO_INT_MAP_TAG)
         if storekey is not None:
-            storekey = int(storekey)
+            storekey = int(storekey.decode('utf-8'))
             v = self._n.getblob(storekey, INT_KEYS_TAG)
             if v is None:
                 raise NetnodeCorruptError()
@@ -182,8 +181,8 @@ class Netnode(object):
 
         did_del = False
         storekey = self._n.hashval(key, STR_TO_INT_MAP_TAG)
-        if storekey is not None and len(storekey) == 4:
-            storekey, = struct.unpack('>I', storekey)
+        if storekey is not None:
+            storekey = int(storekey.decode('utf-8'))
             self._n.delblob(storekey, STR_KEYS_TAG)
             self._n.hashdel(key)
             did_del = True
@@ -206,7 +205,7 @@ class Netnode(object):
         if len(value) > BLOB_SIZE:
             storekey = self._get_next_slot(STR_KEYS_TAG)
             self._n.setblob(value, storekey, STR_KEYS_TAG)
-            self._n.hashset(key, struct.pack('>I', storekey), STR_TO_INT_MAP_TAG)
+            self._n.hashset(key, str(storekey).encode('utf-8'), STR_TO_INT_MAP_TAG)
         else:
             self._n.hashset(key, bytes(value))
 
@@ -214,8 +213,8 @@ class Netnode(object):
         assert isinstance(key, (str))
 
         storekey = self._n.hashval(key, STR_TO_INT_MAP_TAG)
-        if storekey is not None and len(storekey) == 4:
-            storekey, = struct.unpack('>I', storekey)
+        if storekey is not None:
+            storekey = int(storekey.decode('utf-8'))
             v = self._n.getblob(storekey, STR_KEYS_TAG)
             if v is None:
                 raise NetnodeCorruptError()
